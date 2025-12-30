@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000", 
         "http://localhost:8080",
-        "http://192.168.1.207:3000",
-        "http://192.168.1.207:8080"
+        "http://192.168.1.209:3000",
+        "http://192.168.1.209:8080"
     ]
     
     # Keycloak Configuration

@@ -30,19 +30,14 @@
         "http://localhost:3000/",
         "http://localhost:3000/login",
         "http://localhost:3000/dashboard",
-        "http://localhost:3000/*",
-        "http://192.168.1.207:3000",
-        "http://192.168.1.207:3000/",
-        "http://192.168.1.207:3000/login",
-        "http://192.168.1.207:3000/dashboard",
-        "http://192.168.1.207:3000/*",
-        "http://localhost:8080",
-        "http://localhost:8080/*"
+        "http://192.168.1.209:3000",
+        "http://192.168.1.209:3000/",
+        "http://192.168.1.209:3000/login",
+        "http://192.168.1.209:3000/dashboard"
       ],
       "webOrigins": [
-        "+",
         "http://localhost:3000",
-        "http://192.168.1.207:3000"
+        "http://192.168.1.209:3000"
       ],
       "defaultClientScopes": [
         "web-origins",

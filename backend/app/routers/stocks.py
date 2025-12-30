@@ -275,26 +275,3 @@ async def get_cached_top_stocks_legacy(
         current_user=current_user,
         db=db
     )
-    for stock in stocks:
-        stocks_data.append({
-            "rank": stock.rank,
-            "symbol": stock.symbol,
-            "company_name": stock.company_name,
-            "earnings_yield": stock.earnings_yield,
-            "return_on_capital": stock.return_on_capital,
-            "magic_formula_score": stock.magic_formula_score,
-            "sector": stock.sector,
-            "market_cap": stock.market_cap
-        })
-    
-    logger.info(f"✅ Returned {len(stocks_data)} stocks in <100ms")
-    
-    return {
-        "year": year,
-        "month": month,
-        "top_n": top_n,
-        "total_analyzed": len(stocks),
-        "stocks": stocks_data,
-        "cached": True,
-        "generated_at": datetime.now().isoformat()
-    }
