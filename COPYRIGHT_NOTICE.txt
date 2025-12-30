@@ -1,0 +1,56 @@
+"""
+================================================================================
+Stock With Metrics Strategy - Magic Formula Stock Analysis Platform
+================================================================================
+Author:     Balakrishna C
+License:    MIT License
+Copyright:  Copyright (c) 2025 Balakrishna C
+Version:    2.0.0
+Created:    December 2025
+
+DESCRIPTION:
+This is a comprehensive stock analysis platform implementing the Magic Formula
+investment methodology. It features a complete tech stack with React frontend,
+FastAPI backend, PostgreSQL database, Keycloak authentication, and continuous
+data fetching from multiple sources (SEC filings, Yahoo Finance, Alpha Vantage).
+
+DATA:
+- 10,488+ stock records across 1,753 unique stocks
+- Historical data from 2017-2024
+- Sourced from SEC filings via Polygon.io API
+- Real-time updates via continuous fetcher
+
+FEATURES:
+✓ Magic Formula stock ranking (by earnings yield & ROC)
+✓ OAuth2/OpenID Connect authentication (Keycloak)
+✓ Multi-database support (PostgreSQL + MongoDB)
+✓ Redis caching for performance
+✓ Docker containerized microservices
+✓ RESTful API with comprehensive documentation
+✓ Responsive React 18.2 dashboard
+✓ Mobile access support
+✓ Admin endpoints for cache management
+
+TECHNOLOGIES:
+- Backend:   FastAPI, SQLAlchemy, Python 3.11
+- Frontend:  React 18.2, Vite, JavaScript
+- Database:  PostgreSQL 15, MongoDB 7
+- Cache:     Redis 7
+- Auth:      Keycloak 23.0 (OAuth2/OIDC)
+- Infra:     Docker & Docker Compose
+
+USAGE:
+This software is provided for educational and investment analysis purposes.
+Users are responsible for validating all data and making their own investment
+decisions. The author makes no guarantees about data accuracy or investment
+returns.
+
+LICENSE:
+MIT License - See LICENSE file for full legal text
+
+DISCLAIMER:
+This software is provided "AS-IS" without warranty. The author is not liable
+for any losses or damages resulting from the use of this software.
+
+================================================================================
+"""

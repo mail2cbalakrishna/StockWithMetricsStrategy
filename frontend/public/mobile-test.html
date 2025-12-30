@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Access Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.2);
+        }
+        .success { background: rgba(74, 222, 128, 0.3); border-left: 4px solid #4ade80; }
+        .error { background: rgba(239, 68, 68, 0.3); border-left: 4px solid #ef4444; }
+        .info { background: rgba(59, 130, 246, 0.3); border-left: 4px solid #3b82f6; }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        code {
+            background: rgba(0,0,0,0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Mobile Access Test</h1>
+        <p>Test if your Stock Analysis app is accessible from mobile devices</p>
+        
+        <h2>Connection Tests</h2>
+        <div id="results"></div>
+        
+        <h2>Quick Actions</h2>
+        <button onclick="testFrontend()">Test Frontend</button>
+        <button onclick="testBackend()">Test Backend API</button>
+        <button onclick="testKeycloak()">Test Keycloak</button>
+        <button onclick="openApp()">Open App</button>
+        
+        <h2>Access URLs</h2>
+        <div class="status info">
+            <strong>Frontend:</strong> <code>http://192.168.1.201:3000</code><br>
+            <strong>Backend:</strong> <code>http://192.168.1.201:8000</code><br>
+            <strong>Keycloak:</strong> <code>http://192.168.1.201:8090</code>
+        </div>
+        
+        <h2>Login Credentials</h2>
+        <div class="status info">
+            <strong>Username:</strong> admin<br>
+            <strong>Password:</strong> admin123
+        </div>
+        
+        <div id="device-info"></div>
+    </div>
+    
+    <script>
+        // Display device info
+        const deviceInfo = document.getElementById('device-info');
+        deviceInfo.innerHTML = `
+            <h2>Device Information</h2>
+            <div class="status">
+                <strong>User Agent:</strong> ${navigator.userAgent}<br>
+                <strong>Platform:</strong> ${navigator.platform}<br>
+                <strong>Screen:</strong> ${screen.width} x ${screen.height}<br>
+                <strong>Window:</strong> ${window.innerWidth} x ${window.innerHeight}
+            </div>
+        `;
+        
+        // Test functions
+        async function testFrontend() {
+            showResult('Testing Frontend...', 'info');
+            try {
+                const response = await fetch('http://192.168.1.201:3000');
+                if (response.ok) {
+                    showResult('✅ Frontend is accessible!', 'success');
+                } else {
+                    showResult('❌ Frontend returned error: ' + response.status, 'error');
+                }
+            } catch (error) {
+                showResult('❌ Cannot reach frontend: ' + error.message, 'error');
+            }
+        }
+        
+        async function testBackend() {
+            showResult('Testing Backend API...', 'info');
+            try {
+                const response = await fetch('http://192.168.1.201:8000/health');
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('✅ Backend API is accessible! Status: ' + data.status, 'success');
+                } else {
+                    showResult('❌ Backend API returned error: ' + response.status, 'error');
+                }
+            } catch (error) {
+                showResult('❌ Cannot reach backend API: ' + error.message, 'error');
+            }
+        }
+        
+        async function testKeycloak() {
+            showResult('Testing Keycloak...', 'info');
+            try {
+                const response = await fetch('http://192.168.1.201:8090');
+                if (response.ok) {
+                    showResult('✅ Keycloak is accessible!', 'success');
+                } else {
+                    showResult('❌ Keycloak returned error: ' + response.status, 'error');
+                }
+            } catch (error) {
+                showResult('❌ Cannot reach Keycloak: ' + error.message, 'error');
+            }
+        }
+        
+        function openApp() {
+            window.location.href = 'http://192.168.1.201:3000';
+        }
+        
+        function showResult(message, type) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = 'status ' + type;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+        
+        // Auto-run tests on load
+        window.onload = function() {
+            showResult('🚀 Test page loaded successfully!', 'success');
+            showResult('📱 You are viewing this from: ' + (window.innerWidth < 768 ? 'Mobile Device' : 'Desktop/Tablet'), 'info');
+        };
+    </script>
+</body>
+</html>

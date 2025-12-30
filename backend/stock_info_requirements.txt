@@ -1,0 +1,5 @@
+# Stock Info Fetcher - Standalone Requirements
+# Install with: pip install -r stock_info_requirements.txt
+
+aiohttp>=3.9.0
+pymongo>=4.6.0

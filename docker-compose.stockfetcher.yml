@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # MongoDB Database for Stock Info
+  mongodb:
+    image: mongo:7
+    container_name: stock-fetcher-mongodb
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - stock-fetcher-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Stock Info Fetcher Job (8K+ stocks - MongoDB)
+  stock-info-fetcher:
+    image: python:3.11-slim
+    container_name: stock-info-fetcher
+    working_dir: /app
+    environment:
+      POLYGON_API_KEY: VajOJ1XdN_Z1mpb3J2wws7pwn0qeKWNv
+      MONGO_URI: mongodb://mongodb:27017/
+      MONGO_DB: stock_analysis
+      MONGO_COLLECTION: stockinfo
+    command: >
+      bash -c "pip install --no-cache-dir -r stock_info_requirements.txt && python stock_info_fetcher.py"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - stock-fetcher-network
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+
+  # Continuous Fetcher Job (S&P stocks - PostgreSQL)
+  postgres-fetcher:
+    image: python:3.11-slim
+    container_name: postgres-fetcher
+    working_dir: /app
+    environment:
+      POLYGON_API_KEY: 8oQY_6TRJX6KnrVyhzkzqLPFd4Jck1Qw
+      ALPHA_VANTAGE_API_KEY: YC6TI0S22SVZI87N
+      DATABASE_URL: postgresql://keycloak:keycloak_password@stock-analysis-postgres:5432/keycloak
+      REDIS_HOST: stock-analysis-redis
+      REDIS_PORT: 6379
+    command: >
+      bash -c "pip install --no-cache-dir -r requirements.txt && python start_continuous_fetcher.py"
+    networks:
+      - stock-analysis-network
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+
+networks:
+  stock-fetcher-network:
+    driver: bridge
+  stock-analysis-network:
+    external: true
+    name: stockwithmetricsstrategy_stock-analysis-network
+
+volumes:
+  mongodb_data:

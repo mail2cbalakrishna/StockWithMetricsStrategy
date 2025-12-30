@@ -1,0 +1,616 @@
+{
+  "info": {
+    "name": "Magic Formula Stock Analysis API",
+    "description": "Complete API collection for Magic Formula stock analysis with OAuth2 authentication",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "1234567"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "1. Get Access Token (demo user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Automatically save the access token to environment variable",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    pm.environment.set(\"access_token\", jsonData.access_token);",
+                  "    pm.environment.set(\"refresh_token\", jsonData.refresh_token);",
+                  "    console.log(\"✅ Token saved successfully!\");",
+                  "} else {",
+                  "    console.log(\"❌ Failed to get token\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "demo",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "demo123",
+                  "type": "text"
+                },
+                {
+                  "key": "grant_type",
+                  "value": "password",
+                  "type": "text"
+                },
+                {
+                  "key": "client_id",
+                  "value": "stock-analysis-client",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:8081/realms/stock-analysis/protocol/openid-connect/token",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["realms", "stock-analysis", "protocol", "openid-connect", "token"]
+            },
+            "description": "Get OAuth2 access token using Resource Owner Password Credentials flow"
+          },
+          "response": []
+        },
+        {
+          "name": "2. Get Access Token (admin user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    pm.environment.set(\"access_token\", jsonData.access_token);",
+                  "    pm.environment.set(\"refresh_token\", jsonData.refresh_token);",
+                  "    console.log(\"✅ Admin token saved!\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "admin",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "admin123",
+                  "type": "text"
+                },
+                {
+                  "key": "grant_type",
+                  "value": "password",
+                  "type": "text"
+                },
+                {
+                  "key": "client_id",
+                  "value": "stock-analysis-client",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:8081/realms/stock-analysis/protocol/openid-connect/token",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["realms", "stock-analysis", "protocol", "openid-connect", "token"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3. Refresh Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    pm.environment.set(\"access_token\", jsonData.access_token);",
+                  "    pm.environment.set(\"refresh_token\", jsonData.refresh_token);",
+                  "    console.log(\"✅ Token refreshed!\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "refresh_token",
+                  "type": "text"
+                },
+                {
+                  "key": "refresh_token",
+                  "value": "{{refresh_token}}",
+                  "type": "text"
+                },
+                {
+                  "key": "client_id",
+                  "value": "stock-analysis-client",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:8081/realms/stock-analysis/protocol/openid-connect/token",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["realms", "stock-analysis", "protocol", "openid-connect", "token"]
+            },
+            "description": "Refresh expired access token using refresh token"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Stock Analysis - Yearly",
+      "item": [
+        {
+          "name": "Get Top 10 Stocks - Year 2024",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/stocks/top/year/2024?top_n=10",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "stocks", "top", "year", "2024"],
+              "query": [
+                {
+                  "key": "top_n",
+                  "value": "10",
+                  "description": "Number of top stocks (1-50)"
+                }
+              ]
+            },
+            "description": "Get top 10 stocks for year 2024 ranked by Magic Formula"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Top 10 Stocks - Year 2023",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/stocks/top/year/2023?top_n=10",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "stocks", "top", "year", "2023"],
+              "query": [
+                {
+                  "key": "top_n",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Top 5 Stocks - Year 2023",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/stocks/top/year/2023?top_n=5",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "stocks", "top", "year", "2023"],
+              "query": [
+                {
+                  "key": "top_n",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Stock Analysis - Monthly",
+      "item": [
+        {
+          "name": "Get Top 5 Stocks - October 2024",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/stocks/top/monthly/2024/10?top_n=5",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "stocks", "top", "monthly", "2024", "10"],
+              "query": [
+                {
+                  "key": "top_n",
+                  "value": "5",
+                  "description": "Number of top stocks (1-20)"
+                }
+              ]
+            },
+            "description": "Get top 5 stocks for October 2024"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Top 5 Stocks - January 2024",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/stocks/top/monthly/2024/1?top_n=5",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "stocks", "top", "monthly", "2024", "1"],
+              "query": [
+                {
+                  "key": "top_n",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Top 3 Stocks - Any Month",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/stocks/top/monthly/2023/6?top_n=3",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "stocks", "top", "monthly", "2023", "6"],
+              "query": [
+                {
+                  "key": "top_n",
+                  "value": "3"
+                }
+              ]
+            },
+            "description": "Change year and month in URL path"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Stock Analysis - All Months",
+      "item": [
+        {
+          "name": "Get All Months - 2024",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/stocks/top/all-months/2024?top_n=5",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "stocks", "top", "all-months", "2024"],
+              "query": [
+                {
+                  "key": "top_n",
+                  "value": "5",
+                  "description": "Top N stocks per month"
+                }
+              ]
+            },
+            "description": "Get top 5 stocks for each month of 2024 (12 months)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Months - 2023",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/stocks/top/all-months/2023?top_n=3",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "stocks", "top", "all-months", "2023"],
+              "query": [
+                {
+                  "key": "top_n",
+                  "value": "3"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin - Cache Management",
+      "item": [
+        {
+          "name": "Warm Cache for 2024",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/admin/warm-cache/2024",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "admin", "warm-cache", "2024"]
+            },
+            "description": "Pre-fetch ALL 503 stocks for 2024 in background (takes 3-5 min). Users get instant results after."
+          },
+          "response": []
+        },
+        {
+          "name": "Warm Cache for 2023",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/admin/warm-cache/2023",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "admin", "warm-cache", "2023"]
+            },
+            "description": "Pre-fetch ALL stocks for 2023"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Cache Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/admin/cache/stats",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "admin", "cache", "stats"]
+            },
+            "description": "View cache hit rate, total keys, and performance metrics"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalidate Cache for 2024",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/admin/cache/invalidate/2024",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "admin", "cache", "invalidate", "2024"]
+            },
+            "description": "Manually clear cache for 2024 (forces re-fetch on next request)"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalidate Cache for 2023",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/admin/cache/invalidate/2023",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "admin", "cache", "invalidate", "2023"]
+            },
+            "description": "Manually clear cache for 2023"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Backend Health Check (with Cache Status)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["health"]
+            },
+            "description": "Check backend health + Redis cache connection (no auth required)"
+          },
+          "response": []
+        },
+        {
+          "name": "API Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": [""]
+            },
+            "description": "Get API information"
+          },
+          "response": []
+        },
+        {
+          "name": "Keycloak Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": [""]
+            },
+            "description": "Check if Keycloak is accessible"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "keycloak_url",
+      "value": "http://localhost:8081",
+      "type": "string"
+    }
+  ]
+}
