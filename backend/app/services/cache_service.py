@@ -10,6 +10,15 @@ logger = logging.getLogger(__name__)
 
 class CacheService:
     def __init__(self):
+        self.redis = None
+        self._initialized = False
+        self._initialize_redis()
+    
+    def _initialize_redis(self):
+        """Initialize Redis connection with retry logic"""
+        if self._initialized:
+            return
+        
         redis_host = settings.REDIS_HOST
         redis_port = settings.REDIS_PORT
         
@@ -18,10 +27,14 @@ class CacheService:
                 host=redis_host, port=redis_port,
                 decode_responses=True, socket_connect_timeout=5
             )
-            self.redis.ping()
+            ping_result = self.redis.ping()
+            logger.info(f"✅ Redis connected: {redis_host}:{redis_port}")
+            self._initialized = True
         except Exception as e:
-            logger.error(f"Redis connection failed: {e}")
+            logger.error(f"❌ Redis connection failed: {e}")
+            logger.error(f"   Tried to connect to {redis_host}:{redis_port}")
             self.redis = None
+            self._initialized = False
     
     def get_cached_stocks(self, year: int) -> Optional[List[Dict]]:
         if not self.redis:
@@ -85,19 +98,35 @@ class CacheService:
             return False
     
     def get_cache_stats(self) -> Dict:
+        # Try to reconnect if needed
         if not self.redis:
-            return {"status": "unavailable"}
+            self.reconnect()
+        
+        if not self.redis:
+            return {"status": "unavailable", "message": "Redis not connected"}
+        
         try:
-            info = self.redis.info('stats')
-            hits = info.get('keyspace_hits', 0)
-            misses = info.get('keyspace_misses', 0)
+            # Get number of keys
+            dbsize = self.redis.dbsize()
+            
+            # Get memory usage
+            mem_info = self.redis.info('memory')
+            memory_usage = mem_info.get('used_memory_human', 'N/A')
+            
+            # Get all cache keys
+            keys = self.redis.keys('stocks:*')
+            
+            logger.info(f"Cache stats: {dbsize} keys, {len(keys)} cache keys, {memory_usage} memory")
+            
             return {
                 "status": "connected",
-                "total_keys": self.redis.dbsize(),
-                "hits": hits, "misses": misses,
-                "hit_rate": hits / max(hits + misses, 1) * 100
+                "total_keys": dbsize,
+                "cache_keys": len(keys),
+                "memory_usage": memory_usage,
+                "keys_sample": [k for k in keys[:5]]  # Show first 5 keys
             }
         except Exception as e:
+            logger.error(f"Cache stats error: {e}")
             return {"status": "error", "error": str(e)}
     
     def health_check(self) -> bool:
@@ -107,5 +136,10 @@ class CacheService:
             return self.redis.ping()
         except:
             return False
+    
+    def reconnect(self):
+        """Try to reconnect to Redis if connection was lost"""
+        self._initialize_redis()
+        return self.redis is not None
 
 cache_service = CacheService()

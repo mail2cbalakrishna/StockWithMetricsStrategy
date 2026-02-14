@@ -1,5 +1,3 @@
-Copyright (c) 2025 Balakrishna C - Feel free to download, use, modify, and enhance this code for any purpose!
-
 # 🚀 Magic Formula Stock Analysis Platform v3.0# 🚀 Magic Formula Stock Analysis Platform# 🚀 Magic Formula Stock Analysis Platform v2.0
 
 

@@ -24,7 +24,7 @@ function Dashboard() {
 
   // State
   const [view, setView] = useState('yearly') // 'yearly' or 'monthly'
-  const [selectedYear, setSelectedYear] = useState(2024) // Default to 2024 instead of current year
+  const [selectedYear, setSelectedYear] = useState(2024) // Default to 2024 (latest year with data)
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [limit, setLimit] = useState(10)
   const [stocks, setStocks] = useState([])
@@ -33,6 +33,8 @@ function Dashboard() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [selectedStock, setSelectedStock] = useState(null)
   const [error, setError] = useState(null)
+  const [lastCacheHit, setLastCacheHit] = useState(null)
+  const [notification, setNotification] = useState(null)
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -43,19 +45,16 @@ function Dashboard() {
     'July', 'August', 'September', 'October', 'November', 'December'
   ]
 
-  const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i)
+  // Only show years with available data (2017-2024)
+  const years = [2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017]
 
   // Set API token
   useEffect(() => {
     if (keycloak?.token) {
       apiService.setToken(keycloak.token)
+      loadCacheStats() // Load cache stats AFTER token is set
     }
   }, [keycloak])
-
-  // Load cache stats
-  useEffect(() => {
-    loadCacheStats()
-  }, [])
 
   // Load stocks when view changes
   useEffect(() => {
@@ -65,7 +64,9 @@ function Dashboard() {
 
   const loadCacheStats = async () => {
     try {
-      const stats = await apiService.getCacheStats()
+      const response = await apiService.getCacheStats()
+      // API returns { cache: {...}, healthy: ... }
+      const stats = response.cache || response
       setCacheStats(stats)
     } catch (error) {
       console.error('Failed to load cache stats:', error)
@@ -92,6 +93,9 @@ function Dashboard() {
       }
       console.log(`✅ Received ${data.stocks?.length || 0} stocks, cached: ${data.cached}`)
       setStocks(data.stocks || [])
+      if (data.cached) {
+        setLastCacheHit(new Date())
+      }
       await loadCacheStats()
     } catch (error) {
       console.error('❌ Failed to load stocks:', error)
@@ -118,12 +122,55 @@ function Dashboard() {
   const handleWarmCache = async (year) => {
     try {
       await apiService.warmCache(year)
-      alert(`Cache warming started for ${year}`)
+      setNotification({
+        type: 'success',
+        message: `🔥 Cache warming started for ${year}`,
+        details: 'Background job running. Results will be cached in 3-5 minutes.'
+      })
       loadCacheStats()
+      setTimeout(() => setNotification(null), 5000)
     } catch (error) {
-      alert('Failed to warm cache: ' + error.message)
+      setNotification({
+        type: 'error',
+        message: '❌ Cache warming failed',
+        details: error.message
+      })
+      setTimeout(() => setNotification(null), 5000)
     }
   }
+
+  // CSS animations
+  useEffect(() => {
+    const style = document.createElement('style')
+    style.innerHTML = `
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+      .pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+      @keyframes shimmer {
+        0% { background-position: -1000px 0; }
+        100% { background-position: 1000px 0; }
+      }
+      .shimmer {
+        background: linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+        background-size: 1000px 100%;
+        animation: shimmer 2s infinite;
+      }
+      @keyframes slideIn {
+        from {
+          transform: translateX(400px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+    `
+    document.head.appendChild(style)
+    return () => document.head.removeChild(style)
+  }, [])
 
   return (
     <div style={{ minHeight: '100vh', padding: '20px' }}>
@@ -155,15 +202,43 @@ function Dashboard() {
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              padding: '8px 15px',
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: '10px'
+              gap: '12px',
+              padding: '10px 18px',
+              background: cacheStats.status === 'connected' 
+                ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(102, 126, 234, 0.2))'
+                : 'linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(233, 30, 99, 0.2))',
+              borderRadius: '12px',
+              border: cacheStats.status === 'connected'
+                ? '1px solid rgba(76, 175, 80, 0.4)'
+                : '1px solid rgba(244, 67, 54, 0.4)',
+              backdropFilter: 'blur(10px)',
+              position: 'relative',
+              overflow: 'hidden'
             }}>
-              <Database size={18} color="white" />
-              <span style={{ color: 'white', fontSize: '14px' }}>
-                {cacheStats.status === 'connected' ? '✓ Cache Ready' : '✗ Cache Down'}
-              </span>
+              <div style={{
+                position: 'absolute',
+                top: '-50%',
+                right: '-50%',
+                width: '100px',
+                height: '100px',
+                background: cacheStats.status === 'connected'
+                  ? 'radial-gradient(circle, rgba(76, 175, 80, 0.3), transparent)'
+                  : 'radial-gradient(circle, rgba(244, 67, 54, 0.3), transparent)',
+                pointerEvents: 'none'
+              }} />
+              <Zap 
+                size={20} 
+                color={cacheStats.status === 'connected' ? '#4CAF50' : '#F44336'}
+                className={cacheStats.status === 'connected' ? 'pulse' : ''}
+              />
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <div style={{ color: 'white', fontSize: '14px', fontWeight: '600' }}>
+                  {cacheStats.status === 'connected' ? '⚡ Cache Ready' : '✗ Cache Down'}
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>
+                  {cacheStats.cache_keys || cacheStats.total_keys || 0} cached • {cacheStats.memory_usage || 'N/A'}
+                </div>
+              </div>
             </div>
           )}
           <button
@@ -758,9 +833,40 @@ function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Notification Toast */}
+      {notification && (
+        <div style={{
+          position: 'fixed',
+          bottom: '30px',
+          right: '30px',
+          maxWidth: '350px',
+          padding: '16px 20px',
+          background: notification.type === 'success'
+            ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.95), rgba(56, 142, 60, 0.95))'
+            : 'linear-gradient(135deg, rgba(244, 67, 54, 0.95), rgba(211, 47, 47, 0.95))',
+          borderRadius: '12px',
+          backdropFilter: 'blur(10px)',
+          border: notification.type === 'success'
+            ? '1px solid rgba(76, 175, 80, 0.5)'
+            : '1px solid rgba(244, 67, 54, 0.5)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+          zIndex: 1000,
+          animation: 'slideIn 0.3s ease-out',
+          color: 'white'
+        }}>
+          <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '4px' }}>
+            {notification.message}
+          </div>
+          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)' }}>
+            {notification.details}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
 
 function DetailRow({ label, value }) {
   return (

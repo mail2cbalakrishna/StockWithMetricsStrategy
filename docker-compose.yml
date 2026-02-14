@@ -52,6 +52,27 @@ services:
     networks:
       - stock-analysis-network
 
+  # MongoDB Database for Stock Data
+  mongodb:
+    image: mongo:7
+    container_name: stock-analysis-mongodb
+    ports:
+      - "27017:27017"
+    command: mongod --auth
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin_password
+      MONGO_INITDB_DATABASE: stock_analysis
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - stock-analysis-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--authenticationDatabase", "admin", "-u", "admin", "-p", "admin_password", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Redis Cache
   redis:
     image: redis:7-alpine
@@ -84,11 +105,18 @@ services:
       POLYGON_API_KEY: 8oQY_6TRJX6KnrVyhzkzqLPFd4Jck1Qw
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      MONGO_URI: mongodb://admin:admin_password@mongodb:27017/stock_analysis?authSource=admin
+      MONGO_DB: stock_analysis
+      MONGO_COLLECTION: stockinfo
     ports:
       - "8000:8000"
     depends_on:
-      - keycloak
-      - redis
+      mongodb:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      redis:
+        condition: service_healthy
     networks:
       - stock-analysis-network
     volumes:
@@ -102,8 +130,8 @@ services:
       dockerfile: Dockerfile
     container_name: stock-analysis-frontend
     environment:
-      VITE_API_URL: http://192.168.1.209:8000
-      VITE_KEYCLOAK_URL: http://192.168.1.209:8090
+      VITE_API_URL: http://localhost:8000
+      VITE_KEYCLOAK_URL: http://localhost:8090
     ports:
       - "3000:3000"
     depends_on:
@@ -115,6 +143,27 @@ services:
       - /app/node_modules
     restart: unless-stopped
 
+  # MongoDB Stock Info Fetcher Job
+  mongodb-fetcher:
+    image: python:3.11-slim
+    container_name: stock-mongodb-fetcher
+    working_dir: /app
+    environment:
+      POLYGON_API_KEY: 8oQY_6TRJX6KnrVyhzkzqLPFd4Jck1Qw
+      MONGO_URI: mongodb://admin:admin_password@mongodb:27017/?authSource=admin
+      MONGO_DB: stock_analysis
+      MONGO_COLLECTION: stockinfo
+    command: >
+      bash -c "pip install --no-cache-dir aiohttp>=3.9.0 pymongo>=4.6.0 && python stock_info_fetcher.py"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - stock-analysis-network
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+
 networks:
   stock-analysis-network:
     driver: bridge
@@ -122,3 +171,4 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  mongodb_data:

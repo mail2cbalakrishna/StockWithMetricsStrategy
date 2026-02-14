@@ -9,11 +9,22 @@ from sqlalchemy.orm import Session
 from app.models.database import StockData, get_db
 from app.services.dynamic_magic_formula import dynamic_magic_formula
 from app.services.keycloak_auth import get_current_user
+from app.services.cache_service import cache_service
 from app.core.config import settings
 from datetime import datetime
 import logging
+import json
 
 logger = logging.getLogger(__name__)
+
+# Custom JSON encoder for datetime and ORM objects
+class StockEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        if hasattr(obj, '__dict__'):
+            return obj.__dict__
+        return super().default(obj)
 
 router = APIRouter()
 
@@ -24,6 +35,7 @@ async def get_top_stocks_by_year(
     min_earnings_yield: float = Query(default=0.0, description="Minimum earnings yield filter"),
     min_return_on_capital: float = Query(default=0.0, description="Minimum return on capital filter"),
     min_market_cap: float = Query(default=settings.MIN_MARKET_CAP, description="Minimum market cap filter"),
+    force_refresh: bool = Query(default=False, description="Force refresh from database, skip cache"),
     current_user: Dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -40,6 +52,7 @@ async def get_top_stocks_by_year(
     - min_earnings_yield: Minimum earnings yield % (default: 0)
     - min_return_on_capital: Minimum return on capital % (default: 0)
     - min_market_cap: Minimum market cap in $ (default: 1B)
+    - force_refresh: Bypass cache and get fresh data (default: false)
     """
     logger.info(f"User {current_user['username']} requesting top {top_n} stocks for {year}")
     logger.info(f"Filters: EY>={min_earnings_yield}%, ROC>={min_return_on_capital}%, Market Cap>=${min_market_cap}")
@@ -48,6 +61,24 @@ async def get_top_stocks_by_year(
     current_year = datetime.now().year
     if year < 2000 or year > current_year:
         raise HTTPException(status_code=400, detail=f"Year must be between 2000 and {current_year}")
+    
+    # Build cache key
+    cache_key = f"stocks:year:{year}:n={top_n}:ey={min_earnings_yield}:roc={min_return_on_capital}:mc={min_market_cap}"
+    
+    # Check cache first (unless force_refresh)
+    cached_data = None
+    if not force_refresh:
+        try:
+            cached_response = cache_service.redis.get(cache_key) if cache_service.redis else None
+            if cached_response:
+                cached_data = json.loads(cached_response)
+                logger.info(f"✅ Cache HIT for {cache_key}")
+                cached_data['cached'] = True
+                return cached_data
+        except Exception as e:
+            logger.warning(f"Cache read error: {e}")
+    
+    logger.info(f"Cache MISS - querying database")
     
     # Check if data exists
     stock_count = dynamic_magic_formula.get_stock_count(db, year=year, month=None)
@@ -78,13 +109,14 @@ async def get_top_stocks_by_year(
     
     logger.info(f"✅ Returned {len(top_stocks)} stocks after dynamic Magic Formula ranking")
     
-    return {
+    response = {
         "year": year,
         "month": None,
         "top_n": top_n,
         "total_in_database": stock_count,
         "total_after_filter": len(top_stocks),
         "stocks": top_stocks,
+        "cached": False,
         "filters_applied": {
             "min_earnings_yield": min_earnings_yield,
             "min_return_on_capital": min_return_on_capital,
@@ -92,6 +124,16 @@ async def get_top_stocks_by_year(
         },
         "generated_at": datetime.now().isoformat()
     }
+    
+    # Cache the response for 1 hour (3600 seconds)
+    try:
+        if cache_service.redis:
+            cache_service.redis.setex(cache_key, 3600, json.dumps(response, cls=StockEncoder))
+            logger.info(f"✅ Cached response for {cache_key}")
+    except Exception as e:
+        logger.warning(f"Cache write error: {e}")
+    
+    return response
 
 @router.get("/top/monthly/{year}/{month}")
 async def get_top_stocks_by_month(
@@ -101,6 +143,7 @@ async def get_top_stocks_by_month(
     min_earnings_yield: float = Query(default=0.0, description="Minimum earnings yield filter"),
     min_return_on_capital: float = Query(default=0.0, description="Minimum return on capital filter"),
     min_market_cap: float = Query(default=settings.MIN_MARKET_CAP, description="Minimum market cap filter"),
+    force_refresh: bool = Query(default=False, description="Force refresh from database, skip cache"),
     current_user: Dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -116,6 +159,7 @@ async def get_top_stocks_by_month(
     - min_earnings_yield: Minimum earnings yield % (default: 0)
     - min_return_on_capital: Minimum return on capital % (default: 0)
     - min_market_cap: Minimum market cap in $ (default: 1B)
+    - force_refresh: Bypass cache and get fresh data (default: false)
     """
     logger.info(f"User {current_user['username']} requesting top {top_n} stocks for {year}-{month:02d}")
     logger.info(f"Filters: EY>={min_earnings_yield}%, ROC>={min_return_on_capital}%, Market Cap>=${min_market_cap}")
@@ -127,6 +171,24 @@ async def get_top_stocks_by_month(
     current_year = datetime.now().year
     if year < 2000 or year > current_year:
         raise HTTPException(status_code=400, detail=f"Year must be between 2000 and {current_year}")
+    
+    # Build cache key
+    cache_key = f"stocks:month:{year}:{month:02d}:n={top_n}:ey={min_earnings_yield}:roc={min_return_on_capital}:mc={min_market_cap}"
+    
+    # Check cache first (unless force_refresh)
+    cached_data = None
+    if not force_refresh:
+        try:
+            cached_response = cache_service.redis.get(cache_key) if cache_service.redis else None
+            if cached_response:
+                cached_data = json.loads(cached_response)
+                logger.info(f"✅ Cache HIT for {cache_key}")
+                cached_data['cached'] = True
+                return cached_data
+        except Exception as e:
+            logger.warning(f"Cache read error: {e}")
+    
+    logger.info(f"Cache MISS - querying database")
     
     # Check if monthly data exists
     stock_count = dynamic_magic_formula.get_stock_count(db, year=year, month=month)
@@ -166,7 +228,7 @@ async def get_top_stocks_by_month(
     
     logger.info(f"✅ Returned {len(top_stocks)} stocks after dynamic Magic Formula ranking")
     
-    return {
+    response = {
         "year": year,
         "month": used_month,
         "requested_month": month,
@@ -175,6 +237,7 @@ async def get_top_stocks_by_month(
         "total_in_database": stock_count,
         "total_after_filter": len(top_stocks),
         "stocks": top_stocks,
+        "cached": False,
         "filters_applied": {
             "min_earnings_yield": min_earnings_yield,
             "min_return_on_capital": min_return_on_capital,
@@ -182,6 +245,16 @@ async def get_top_stocks_by_month(
         },
         "generated_at": datetime.now().isoformat()
     }
+    
+    # Cache the response for 1 hour (3600 seconds)
+    try:
+        if cache_service.redis:
+            cache_service.redis.setex(cache_key, 3600, json.dumps(response, cls=StockEncoder))
+            logger.info(f"✅ Cached response for {cache_key}")
+    except Exception as e:
+        logger.warning(f"Cache write error: {e}")
+    
+    return response
 
 @router.get("/periods")
 async def get_available_periods(

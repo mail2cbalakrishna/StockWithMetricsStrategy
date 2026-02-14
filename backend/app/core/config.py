@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     # Database Configuration
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://keycloak:keycloak_password@postgres:5432/keycloak")
     
+    # MongoDB Configuration
+    MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://admin:admin_password@localhost:27017/stock_analysis?authSource=admin")
+    MONGO_DB: str = os.getenv("MONGO_DB", "stock_analysis")
+    MONGO_COLLECTION: str = os.getenv("MONGO_COLLECTION", "stockinfo")
+    
     # Magic Formula Parameters
     MIN_MARKET_CAP: float = 1_000_000_000  # $1B minimum
     EXCLUDE_FINANCIALS: bool = True
